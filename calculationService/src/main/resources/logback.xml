@@ -13,7 +13,7 @@
         <appender-ref ref="STDOUT" />
     </logger>
 
-    <logger name="myproject" level="debug" additivity="false">
+    <logger name="calculation" level="debug" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 
