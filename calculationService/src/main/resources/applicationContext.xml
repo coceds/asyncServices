@@ -1,0 +1,26 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean class="org.jboss.resteasy.plugins.spring.SpringBeanProcessorServletAware"/>
+    <context:annotation-config />
+    <context:component-scan base-package="myproject" />
+
+    <import resource="classpath:dataBaseContext.xml" />
+
+    <bean id="apiListingResourceJSON" class="com.wordnik.swagger.jaxrs.listing.ApiListingResourceJSON"/>
+    <bean id="apiDeclarationProvider" class="com.wordnik.swagger.jaxrs.listing.ApiDeclarationProvider"/>
+    <bean id="resourceListingProvider" class="com.wordnik.swagger.jaxrs.listing.ResourceListingProvider"/>
+
+    <bean id="beanConfig" class="com.wordnik.swagger.jaxrs.config.BeanConfig">
+        <property name="title" value="Swagger Sample App"/>
+        <property name="version" value="1.0.0" />
+        <property name="basePath" value="http://localhost:8080/test"/>
+        <property name="resourcePackage" value="myproject"/>
+        <property name="scan" value="true"/>
+    </bean>
+</beans>
