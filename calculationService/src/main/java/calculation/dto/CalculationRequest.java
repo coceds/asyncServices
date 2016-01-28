@@ -1,6 +1,6 @@
 package calculation.dto;
 
-public class CalculationRequestDto {
+public class CalculationRequest {
 
     private Integer parameter;
 
