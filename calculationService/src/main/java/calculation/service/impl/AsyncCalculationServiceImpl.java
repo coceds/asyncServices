@@ -16,7 +16,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.math.BigDecimal;
 
 @Service
-public class AsyncCalculationServiceImpl implements AsyncCalculationService {
+class AsyncCalculationServiceImpl implements AsyncCalculationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncCalculationServiceImpl.class);
 
@@ -25,8 +25,9 @@ public class AsyncCalculationServiceImpl implements AsyncCalculationService {
     @Autowired
     private ThreadPoolTaskExecutor taskExecutor;
 
+    @Override
     public DeferredResult<CalculationResponse> multipleByTwo(BigDecimal parameter) {
-        final DeferredResult<CalculationResponse> result = new DeferredResult<>(5000);
+        final DeferredResult<CalculationResponse> result = new DeferredResult<>();
         ListenableFuture<BigDecimal> task = taskExecutor.submitListenable(
                 () -> calculationService.multipleByTwo(parameter)
         );
@@ -45,8 +46,9 @@ public class AsyncCalculationServiceImpl implements AsyncCalculationService {
         return result;
     }
 
+    @Override
     public DeferredResult<CalculationResponse> multipleByThree(BigDecimal parameter) {
-        final DeferredResult<CalculationResponse> result = new DeferredResult<>(5000);
+        final DeferredResult<CalculationResponse> result = new DeferredResult<>();
         ListenableFuture<BigDecimal> task = taskExecutor.submitListenable(
                 () -> calculationService.multipleByThree(parameter)
         );

@@ -12,6 +12,7 @@ class CalculationServiceImpl implements CalculationService {
 
     private static final Logger logger = LoggerFactory.getLogger(CalculationServiceImpl.class);
 
+    @Override
     public BigDecimal multipleByTwo(BigDecimal parameter) {
         try {
             Thread.sleep(5000);
@@ -21,6 +22,7 @@ class CalculationServiceImpl implements CalculationService {
         return parameter.multiply(new BigDecimal("2"));
     }
 
+    @Override
     public BigDecimal multipleByThree(BigDecimal parameter) {
         try {
             Thread.sleep(3000);
