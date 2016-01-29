@@ -11,15 +11,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
-import java.util.concurrent.ExecutorService;
-
 @RestController
 public class CalculationController {
 
     @Autowired
     private AsyncCalculationService asyncCalculationService;
-    @Autowired
-    private ExecutorService executorService;
 
     @RequestMapping(value = "/multipleByTwo", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponse> multipleByTwo(@RequestBody CalculationRequest request) {

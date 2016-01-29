@@ -1,13 +1,15 @@
 package calculation.dto;
 
 
+import java.math.BigDecimal;
+
 public class CalculationResponse {
 
-    private Integer result;
+    private BigDecimal result;
 
     private String status;
 
-    public CalculationResponse(Integer result) {
+    public CalculationResponse(BigDecimal result) {
         this.result = result;
     }
 
@@ -15,11 +17,11 @@ public class CalculationResponse {
         this.status = status;
     }
 
-    public Integer getResult() {
+    public BigDecimal getResult() {
         return result;
     }
 
-    public void setResult(Integer result) {
+    public void setResult(BigDecimal result) {
         this.result = result;
     }
 

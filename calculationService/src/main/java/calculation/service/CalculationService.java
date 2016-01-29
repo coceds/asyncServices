@@ -1,9 +1,11 @@
 package calculation.service;
 
 
+import java.math.BigDecimal;
+
 public interface CalculationService {
 
-    Integer multipleByTwo(Integer parameter);
+    BigDecimal multipleByTwo(BigDecimal parameter);
 
-    Integer multipleByThree(Integer parameter);
+    BigDecimal multipleByThree(BigDecimal parameter);
 }

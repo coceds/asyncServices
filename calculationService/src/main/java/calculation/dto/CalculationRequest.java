@@ -1,14 +1,16 @@
 package calculation.dto;
 
+import java.math.BigDecimal;
+
 public class CalculationRequest {
 
-    private Integer parameter;
+    private BigDecimal parameter;
 
-    public Integer getParameter() {
+    public BigDecimal getParameter() {
         return parameter;
     }
 
-    public void setParameter(Integer parameter) {
+    public void setParameter(BigDecimal parameter) {
         this.parameter = parameter;
     }
 }
