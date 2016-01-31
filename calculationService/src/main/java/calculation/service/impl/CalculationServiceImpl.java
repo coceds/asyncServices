@@ -25,7 +25,7 @@ class CalculationServiceImpl implements CalculationService {
     @Override
     public BigDecimal multipleByThree(BigDecimal parameter) {
         try {
-            Thread.sleep(3000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             logger.error(e.toString());
         }

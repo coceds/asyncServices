@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import facade.client.CalculationClient;
 import facade.client.CalculationEndPoints;
-import facade.dto.CalculationRequest;
-import facade.dto.CalculationResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -16,10 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.client.AsyncRestTemplate;
 
-import java.math.BigDecimal;
-
 @Service
-public class CalculationClientImpl implements CalculationClient {
+class CalculationClientImpl implements CalculationClient {
 
     @Autowired
     private AsyncRestTemplate restTemplate;
@@ -27,25 +23,19 @@ public class CalculationClientImpl implements CalculationClient {
     private String baseUrl;
 
     @Override
-    public ListenableFuture<ResponseEntity<CalculationResponse>> multipleByTwo(BigDecimal parameter) {
-        CalculationEndPoints endPoint = CalculationEndPoints.MULTIPLY_BY_TWO;
-        return process(parameter, endPoint);
+    public <T, K> ListenableFuture<ResponseEntity<T>> multipleByTwo(K request) {
+        return process(request, CalculationEndPoints.MULTIPLY_BY_TWO);
     }
 
     @Override
-    public ListenableFuture<ResponseEntity<CalculationResponse>> multipleByThree(BigDecimal parameter) {
-        CalculationEndPoints endPoint = CalculationEndPoints.MULTIPLY_BY_THREE;
-        return process(parameter, endPoint);
+    public <T, K> ListenableFuture<ResponseEntity<T>> multipleByThree(K request) {
+        return process(request, CalculationEndPoints.MULTIPLY_BY_THREE);
     }
 
-    private ListenableFuture<ResponseEntity<CalculationResponse>> process(BigDecimal parameter, CalculationEndPoints endPoint) {
-        CalculationRequest request = new CalculationRequest();
-        request.setParameter(parameter);
+    private <T, K> ListenableFuture<ResponseEntity<T>> process(K request, CalculationEndPoints endPoint) {
         HttpEntity<String> httpEntity = createHttpEntity(endPoint.getMediaType(), request);
-        ListenableFuture<ResponseEntity<CalculationResponse>> futureEntity = restTemplate
-                .exchange(baseUrl + endPoint.getUrl(), endPoint.getHttpMethod(), httpEntity,
-                        CalculationResponse.class);
-        return futureEntity;
+        return restTemplate.exchange(baseUrl + endPoint.getUrl(), endPoint.getHttpMethod(), httpEntity,
+                endPoint.getResultClass());
     }
 
     private HttpEntity<String> createHttpEntity(MediaType mediaType, Object entity) {

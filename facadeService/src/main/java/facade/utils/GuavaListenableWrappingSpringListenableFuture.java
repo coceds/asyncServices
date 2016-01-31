@@ -8,7 +8,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class GuavaListenableWrappingSpringListenableFuture<T> implements com.google.common.util.concurrent.ListenableFuture<T> {
+class GuavaListenableWrappingSpringListenableFuture<T> implements com.google.common.util.concurrent.ListenableFuture<T> {
     private ListenableFuture<T> springFuture;
 
     public GuavaListenableWrappingSpringListenableFuture(ListenableFuture<T> springListenableFuture) {
