@@ -1,14 +1,13 @@
 package calculation.service;
 
 
-import calculation.dto.CalculationResponse;
-import org.springframework.web.context.request.async.DeferredResult;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.math.BigDecimal;
 
 public interface AsyncCalculationService {
 
-    DeferredResult<CalculationResponse> multipleByTwo(BigDecimal parameter);
+    ListenableFuture<BigDecimal> multipleByTwo(BigDecimal parameter);
 
-    DeferredResult<CalculationResponse> multipleByThree(BigDecimal parameter);
+    ListenableFuture<BigDecimal> multipleByThree(BigDecimal parameter);
 }

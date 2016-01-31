@@ -24,14 +24,18 @@ public class FacadeController {
     public DeferredResult<CalculationResponse> calculate(@RequestBody CalculationRequest request) {
         final ListenableFuture<CalculationResponse> future =
                 asyncFacadeService.calculate(request.getParameter());
+        return setResult(future);
+    }
+
+    private DeferredResult<CalculationResponse> setResult(ListenableFuture<CalculationResponse> response) {
         final DeferredResult<CalculationResponse> result = new DeferredResult<>();
-        Futures.addCallback(future, new FutureCallback<CalculationResponse>() {
+        Futures.addCallback(response, new FutureCallback<CalculationResponse>() {
             @Override
             public void onSuccess(CalculationResponse response) {
                 if (response.getResult() == null) {
                     result.setResult(new CalculationResponse("error"));
                 } else {
-                    result.setResult(new CalculationResponse(response.getResult()));
+                    result.setResult(response);
                 }
             }
 

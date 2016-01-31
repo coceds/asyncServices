@@ -1,5 +1,6 @@
 package facade.service.impl;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.*;
 import facade.client.CalculationClient;
 import facade.dto.CalculationRequest;
@@ -33,31 +34,30 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     public ListenableFuture<CalculationResponse> calculate(BigDecimal parameter) {
 
         List<ListenableFuture<ResponseEntity<CalculationResponse>>> futures = new ArrayList<>();
-        final org.springframework.util.concurrent.ListenableFuture<ResponseEntity<CalculationResponse>> futureTwo =
-                calculationClient.multipleByTwo(new CalculationRequest(parameter));
-        futures.add(ListenableUtils.springListenableFutureToGuava(futureTwo));
 
-        org.springframework.util.concurrent.ListenableFuture<ResponseEntity<CalculationResponse>> futureThree =
-                calculationClient.multipleByThree(new CalculationRequest(parameter));
-        futures.add(ListenableUtils.springListenableFutureToGuava(futureThree));
+        futures.add(ListenableUtils.springListenableFutureToGuava(
+                calculationClient.multipleByTwo(new CalculationRequest(parameter))));
+
+        futures.add(ListenableUtils.springListenableFutureToGuava(
+                calculationClient.multipleByThree(new CalculationRequest(parameter))));
 
         ListenableFuture<List<ResponseEntity<CalculationResponse>>> successfulQueries = Futures.allAsList(futures);
 
         AsyncFunction<List<ResponseEntity<CalculationResponse>>, CalculationResponse> queryFunction =
-                new AsyncFunction<List<ResponseEntity<CalculationResponse>>, CalculationResponse>() {
-                    public ListenableFuture<CalculationResponse> apply(List<ResponseEntity<CalculationResponse>> entities) {
-                        final List<BigDecimal> results = entities.stream().map(e -> {
-                            if (e == null || e.getBody().getResult() == null) {
-                                throw new RuntimeException("calculation failed.");
-                            } else {
-                                return e.getBody().getResult();
-                            }
-                        }).collect(Collectors.toList());
-                        return executorService.submit(() ->
-                                        new CalculationResponse(calculation.calculate(results))
-                        );
-                    }
+                (List<ResponseEntity<CalculationResponse>> entities) -> {
+                    final List<BigDecimal> results = entities.stream().map(e -> {
+                        if (e == null || e.getBody().getResult() == null) {
+                            logger.error("calculation failed.");
+                            throw new RuntimeException("calculation failed.");
+                        } else {
+                            return e.getBody().getResult();
+                        }
+                    }).collect(Collectors.toList());
+                    return executorService.submit(() ->
+                                    new CalculationResponse(calculation.calculate(ImmutableList.copyOf(results)))
+                    );
                 };
+
         return Futures.transform(successfulQueries, queryFunction);
     }
 

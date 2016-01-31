@@ -9,11 +9,16 @@
     <context:annotation-config />
     <context:component-scan base-package="calculation.service" />
 
-    <bean id="asyncTaskExecutor"
-          class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
-        <property name="corePoolSize" value="5" />
-        <property name="maxPoolSize" value="10" />
-        <!--<property name="queueCapacity" value="25" />-->
+    <!--<bean id="asyncTaskExecutor"-->
+          <!--class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">-->
+        <!--<property name="corePoolSize" value="5" />-->
+        <!--<property name="maxPoolSize" value="10" />-->
+        <!--&lt;!&ndash;<property name="queueCapacity" value="25" />&ndash;&gt;-->
+    <!--</bean>-->
+
+    <bean id="service" class="java.util.concurrent.Executors"
+          factory-method="newFixedThreadPool" destroy-method="shutdown">
+        <constructor-arg value="10"/>
     </bean>
 
 </beans>
