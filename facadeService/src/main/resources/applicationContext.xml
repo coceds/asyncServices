@@ -12,15 +12,18 @@
     <context:annotation-config/>
     <context:component-scan base-package="facade.service, facade.client"/>
 
-    <bean id="asyncRestTemplate"
-          class="org.springframework.web.client.AsyncRestTemplate"></bean>
+    <bean class="facade.listener.AppListener"></bean>
+
+    <!--<bean id="asyncRestTemplate"-->
+          <!--class="org.springframework.web.client.AsyncRestTemplate"></bean>-->
+    <bean class="facade.config.HttpConfig"></bean>
 
     <util:properties id="properties">
         <prop key="calculationServiceUrl">http://localhost:3080</prop>
     </util:properties>
 
     <bean id="service" class="java.util.concurrent.Executors"
-          factory-method="newFixedThreadPool" destroy-method="shutdown">
+          factory-method="newFixedThreadPool">
         <constructor-arg value="10"/>
     </bean>
 

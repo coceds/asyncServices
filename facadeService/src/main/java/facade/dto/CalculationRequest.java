@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 public class CalculationRequest {
 
+    private BigDecimal parameter;
+
     public CalculationRequest() {
     }
 
@@ -11,7 +13,6 @@ public class CalculationRequest {
         this.parameter = parameter;
     }
 
-    private BigDecimal parameter;
 
     public BigDecimal getParameter() {
         return parameter;

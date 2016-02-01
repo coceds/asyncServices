@@ -33,20 +33,22 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
     public ListenableFuture<CalculationResponse> calculate(BigDecimal parameter) {
 
+
         List<ListenableFuture<ResponseEntity<CalculationResponse>>> futures = new ArrayList<>();
 
-        futures.add(ListenableUtils.springListenableFutureToGuava(
+        futures.add(ListenableUtils.convertFuture(
                 calculationClient.multipleByTwo(new CalculationRequest(parameter))));
 
-        futures.add(ListenableUtils.springListenableFutureToGuava(
+        futures.add(ListenableUtils.convertFuture(
                 calculationClient.multipleByThree(new CalculationRequest(parameter))));
+
 
         ListenableFuture<List<ResponseEntity<CalculationResponse>>> successfulQueries = Futures.allAsList(futures);
 
         AsyncFunction<List<ResponseEntity<CalculationResponse>>, CalculationResponse> queryFunction =
                 (List<ResponseEntity<CalculationResponse>> entities) -> {
                     final List<BigDecimal> results = entities.stream().map(e -> {
-                        if (e == null || e.getBody().getResult() == null) {
+                        if (e.getBody().getResult() == null) {
                             logger.error("calculation failed.");
                             throw new RuntimeException("calculation failed.");
                         } else {
@@ -54,7 +56,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
                         }
                     }).collect(Collectors.toList());
                     return executorService.submit(() ->
-                                    new CalculationResponse(calculation.calculate(ImmutableList.copyOf(results)))
+                            new CalculationResponse(calculation.calculate(ImmutableList.copyOf(results)))
                     );
                 };
 

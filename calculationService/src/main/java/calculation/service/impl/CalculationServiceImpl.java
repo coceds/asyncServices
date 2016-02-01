@@ -17,6 +17,7 @@ class CalculationServiceImpl implements CalculationService {
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             logger.error(e.toString());
         }
         return parameter.multiply(new BigDecimal("2"));
@@ -27,6 +28,7 @@ class CalculationServiceImpl implements CalculationService {
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             logger.error(e.toString());
         }
         return parameter.multiply(new BigDecimal("3"));
