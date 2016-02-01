@@ -4,6 +4,7 @@ import calculation.dto.CalculationRequest;
 import calculation.dto.CalculationResponse;
 import calculation.dto.FailedResponse;
 import calculation.service.AsyncCalculationService;
+import calculation.service.ObservableService;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import rx.Observable;
 
 import java.math.BigDecimal;
 
@@ -24,6 +26,16 @@ public class CalculationController {
 
     @Autowired
     private AsyncCalculationService asyncCalculationService;
+    @Autowired
+    private ObservableService observableService;
+
+    @RequestMapping(value = "/randomStream", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public DeferredResult<CalculationResponse> randomStream(@RequestBody CalculationRequest request) {
+        Observable<CalculationResponse> o = observableService.getRandomStream();
+        final DeferredResult<CalculationResponse> deffered = new DeferredResult<>(90000);
+        o.subscribe(m -> deffered.setResult(m), e -> deffered.setErrorResult(e));
+        return deffered;
+    }
 
     @RequestMapping(value = "/multipleByTwo", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponse> multipleByTwo(@RequestBody CalculationRequest request) {

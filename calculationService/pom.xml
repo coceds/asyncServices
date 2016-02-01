@@ -81,6 +81,13 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <!-- Java RX -->
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>1.0.6</version>
+        </dependency>
+
     </dependencies>
 
     <build>
