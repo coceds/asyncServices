@@ -12,6 +12,7 @@ import rx.schedulers.Schedulers;
 import java.math.BigDecimal;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ObservableServiceImpl implements ObservableService {
@@ -26,9 +27,8 @@ public class ObservableServiceImpl implements ObservableService {
             logger.info("new random");
             BigDecimal random = new BigDecimal(ThreadLocalRandom.current().nextInt(0, max.toBigInteger().intValue()));
             s.onNext(new CalculationResponse(random));
-            delay(1000);
             s.onCompleted();
-        }).subscribeOn(Schedulers.from(executorService)).repeat(10l);
+        }).subscribeOn(Schedulers.from(executorService)).delay(1000l, TimeUnit.MILLISECONDS).repeat(10l);
     }
 
     public static void delay(long millis) {

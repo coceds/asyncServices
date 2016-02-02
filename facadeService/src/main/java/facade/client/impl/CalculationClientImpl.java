@@ -24,4 +24,9 @@ class CalculationClientImpl implements CalculationClient {
     public ListenableFuture<ResponseEntity<CalculationResponse>> multipleByThree(CalculationRequest request) {
         return asyncRestClient.exchange(CalculationEndPoints.MULTIPLY_BY_THREE, request);
     }
+
+    @Override
+    public ListenableFuture<ResponseEntity<CalculationResponse>> randomStream(CalculationRequest request) {
+        return asyncRestClient.exchange(CalculationEndPoints.RANDOM_STREAM, request);
+    }
 }

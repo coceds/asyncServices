@@ -14,6 +14,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import rx.Observable;
+
+import java.io.IOException;
+import java.math.BigDecimal;
 
 @RestController
 public class FacadeController {
@@ -22,6 +27,26 @@ public class FacadeController {
 
     @Autowired
     private AsyncFacadeService asyncFacadeService;
+
+    //@RequestBody CalculationRequest request
+    @RequestMapping(value = "/randomStream", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public SseEmitter randomStream() {
+        final SseEmitter responseBodyEmitter = new SseEmitter();
+        Observable<String> o = asyncFacadeService.randomStream(new BigDecimal("10"));
+        o.doOnCompleted(() -> responseBodyEmitter.complete());
+        o.subscribe(m -> {
+            try {
+                logger.info("send response");
+                responseBodyEmitter.send(m);
+            } catch (IOException e) {
+                responseBodyEmitter.completeWithError(e);
+            }
+        }, e -> {
+            responseBodyEmitter.completeWithError(e);
+        });
+        return responseBodyEmitter;
+    }
+
 
     @RequestMapping(value = "/calculate", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponse> calculate(@RequestBody CalculationRequest request) {

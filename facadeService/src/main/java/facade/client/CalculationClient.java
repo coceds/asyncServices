@@ -10,8 +10,12 @@ public interface CalculationClient {
     String SERVICE_PATH = "/calculationService";
     String MULTIPLY_BY_TWO = SERVICE_PATH + "/multipleByTwo";
     String MULTIPLY_BY_THREE = SERVICE_PATH + "/multipleByThree";
+    String RANDOM_STREAM = SERVICE_PATH + "/randomStream";
 
     ListenableFuture<ResponseEntity<CalculationResponse>> multipleByTwo(CalculationRequest request);
 
     ListenableFuture<ResponseEntity<CalculationResponse>> multipleByThree(CalculationRequest request);
+
+    ListenableFuture<ResponseEntity<CalculationResponse>> randomStream(CalculationRequest request);
+
 }

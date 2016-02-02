@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import rx.Observable;
+import rx.observables.ConnectableObservable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -36,24 +37,19 @@ public class CalculationController {
         final SseEmitter responseBodyEmitter = new SseEmitter();
         Observable<CalculationResponse> o = observableService.getRandomStream(request.getParameter());
         o.doOnCompleted(() -> responseBodyEmitter.complete());
-        o.subscribe(m -> {
+        ConnectableObservable<CalculationResponse> connectableObservable = o.publish();
+
+        connectableObservable.subscribe(m -> {
             try {
                 logger.info("send response");
                 responseBodyEmitter.send(m);
             } catch (IOException e) {
-                responseBodyEmitter.complete();
-                throw new RuntimeException(e);
+                responseBodyEmitter.completeWithError(e);
             }
-
         }, e -> {
-            try {
-                responseBodyEmitter.send(e);
-            } catch (IOException e1) {
-                throw new RuntimeException(e1);
-            } finally {
-                responseBodyEmitter.complete();
-            }
+            responseBodyEmitter.completeWithError(e);
         });
+        connectableObservable.connect();
         return responseBodyEmitter;
     }
 
