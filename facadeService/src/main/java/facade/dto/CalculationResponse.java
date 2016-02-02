@@ -9,6 +9,8 @@ public class CalculationResponse {
 
     private String status;
 
+    private boolean flag;
+
     public CalculationResponse() {
     }
 
@@ -18,6 +20,18 @@ public class CalculationResponse {
 
     public CalculationResponse(String status) {
         this.status = status;
+    }
+
+    public CalculationResponse(boolean flag) {
+        this.flag = flag;
+    }
+
+    public boolean isFlag() {
+        return flag;
+    }
+
+    public void setFlag(boolean flag) {
+        this.flag = flag;
     }
 
     public BigDecimal getResult() {

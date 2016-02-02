@@ -9,12 +9,26 @@ public class CalculationResponse {
 
     private String status;
 
+    private boolean flag;
+
     public CalculationResponse(BigDecimal result) {
         this.result = result;
     }
 
     public CalculationResponse(String status) {
         this.status = status;
+    }
+
+    public CalculationResponse(boolean flag) {
+        this.flag = flag;
+    }
+
+    public boolean isFlag() {
+        return flag;
+    }
+
+    public void setFlag(boolean flag) {
+        this.flag = flag;
     }
 
     public BigDecimal getResult() {

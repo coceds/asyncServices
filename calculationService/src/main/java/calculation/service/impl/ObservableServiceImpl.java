@@ -31,12 +31,13 @@ public class ObservableServiceImpl implements ObservableService {
         }).subscribeOn(Schedulers.from(executorService)).delay(1000l, TimeUnit.MILLISECONDS).repeat(10l);
     }
 
-    public static void delay(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    @Override
+    public Observable<CalculationResponse> getRandomStreamBoolean() {
+        return Observable.<CalculationResponse>create(s -> {
+            logger.info("new random boolean");
+            s.onNext(new CalculationResponse(ThreadLocalRandom.current().nextBoolean()));
+            s.onCompleted();
+        }).subscribeOn(Schedulers.from(executorService)).delay(1500l, TimeUnit.MILLISECONDS).repeat(10l);
     }
 
 }

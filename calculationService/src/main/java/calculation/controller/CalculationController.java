@@ -34,14 +34,23 @@ public class CalculationController {
 
     @RequestMapping(value = "/randomStream", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStream(@RequestBody CalculationRequest request) {
-        final SseEmitter responseBodyEmitter = new SseEmitter();
         Observable<CalculationResponse> o = observableService.getRandomStream(request.getParameter());
-        o.doOnCompleted(() -> responseBodyEmitter.complete());
-        ConnectableObservable<CalculationResponse> connectableObservable = o.publish();
+        return setEmitter(o);
+    }
+
+    @RequestMapping(value = "/randomStreamBoolean", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public SseEmitter randomStreamBoolean() {
+        Observable<CalculationResponse> o = observableService.getRandomStreamBoolean();
+        return setEmitter(o);
+    }
+
+    private SseEmitter setEmitter(Observable<CalculationResponse> observable) {
+        final SseEmitter responseBodyEmitter = new SseEmitter();
+        observable.doOnCompleted(() -> responseBodyEmitter.complete());
+        ConnectableObservable<CalculationResponse> connectableObservable = observable.publish();
 
         connectableObservable.subscribe(m -> {
             try {
-                logger.info("send response");
                 responseBodyEmitter.send(m);
             } catch (IOException e) {
                 responseBodyEmitter.completeWithError(e);

@@ -32,7 +32,7 @@ public class FacadeController {
     @RequestMapping(value = "/randomStream", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStream() {
         final SseEmitter responseBodyEmitter = new SseEmitter();
-        Observable<String> o = asyncFacadeService.randomStream(new BigDecimal("10"));
+        Observable<CalculationResponse> o = asyncFacadeService.randomStream(new BigDecimal("10"));
         o.doOnCompleted(() -> responseBodyEmitter.complete());
         o.subscribe(m -> {
             try {

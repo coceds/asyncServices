@@ -10,5 +10,5 @@ public interface AsyncFacadeService {
 
     ListenableFuture<CalculationResponse> calculate(BigDecimal parameter);
 
-    Observable<String> randomStream(BigDecimal parameter);
+    Observable<CalculationResponse> randomStream(BigDecimal parameter);
 }
