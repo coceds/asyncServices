@@ -15,8 +15,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import rx.Observable;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 
 @RestController
@@ -30,11 +32,29 @@ public class CalculationController {
     private ObservableService observableService;
 
     @RequestMapping(value = "/randomStream", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
-    public DeferredResult<CalculationResponse> randomStream(@RequestBody CalculationRequest request) {
-        Observable<CalculationResponse> o = observableService.getRandomStream();
-        final DeferredResult<CalculationResponse> deffered = new DeferredResult<>(90000);
-        o.subscribe(m -> deffered.setResult(m), e -> deffered.setErrorResult(e));
-        return deffered;
+    public SseEmitter randomStream(@RequestBody CalculationRequest request) {
+        final SseEmitter responseBodyEmitter = new SseEmitter();
+        Observable<CalculationResponse> o = observableService.getRandomStream(request.getParameter());
+        o.doOnCompleted(() -> responseBodyEmitter.complete());
+        o.subscribe(m -> {
+            try {
+                logger.info("send response");
+                responseBodyEmitter.send(m);
+            } catch (IOException e) {
+                responseBodyEmitter.complete();
+                throw new RuntimeException(e);
+            }
+
+        }, e -> {
+            try {
+                responseBodyEmitter.send(e);
+            } catch (IOException e1) {
+                throw new RuntimeException(e1);
+            } finally {
+                responseBodyEmitter.complete();
+            }
+        });
+        return responseBodyEmitter;
     }
 
     @RequestMapping(value = "/multipleByTwo", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})

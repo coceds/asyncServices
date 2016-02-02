@@ -11,6 +11,7 @@ import rx.schedulers.Schedulers;
 
 import java.math.BigDecimal;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class ObservableServiceImpl implements ObservableService {
@@ -20,14 +21,14 @@ public class ObservableServiceImpl implements ObservableService {
     @Autowired
     private ExecutorService executorService;
 
-    public Observable<CalculationResponse> getRandomStream() {
+    public Observable<CalculationResponse> getRandomStream(BigDecimal max) {
         return Observable.<CalculationResponse>create(s -> {
-            logger.info("Start: Executing slow task in Service 1");
+            logger.info("new random");
+            BigDecimal random = new BigDecimal(ThreadLocalRandom.current().nextInt(0, max.toBigInteger().intValue()));
+            s.onNext(new CalculationResponse(random));
             delay(1000);
-            s.onNext(new CalculationResponse(BigDecimal.ONE));
-            logger.info("End: Executing slow task in Service 1");
             s.onCompleted();
-        }).subscribeOn(Schedulers.from(executorService));
+        }).subscribeOn(Schedulers.from(executorService)).repeat(10l);
     }
 
     public static void delay(long millis) {
