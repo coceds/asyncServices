@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import rx.Observable;
-import rx.observables.ConnectableObservable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -32,33 +31,54 @@ public class CalculationController {
     @Autowired
     private ObservableService observableService;
 
+    @RequestMapping(value = "/test", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public CalculationResponse test() {
+        throw new RuntimeException("test dasd ");
+    }
+
     @RequestMapping(value = "/randomStream", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStream(@RequestBody CalculationRequest request) {
-        Observable<CalculationResponse> o = observableService.getRandomStream(request.getParameter());
+        Observable<BigDecimal> o = observableService.getRandomStream(new BigDecimal("10"));
         return setEmitter(o);
     }
 
     @RequestMapping(value = "/randomStreamBoolean", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStreamBoolean() {
-        Observable<CalculationResponse> o = observableService.getRandomStreamBoolean();
+        Observable<Boolean> o = observableService.getRandomStreamBoolean();
         return setEmitter(o);
     }
 
-    private SseEmitter setEmitter(Observable<CalculationResponse> observable) {
+    private CalculationResponse createResponse(Object b) {
+        if (b instanceof Boolean) {
+            return new CalculationResponse((boolean) b);
+        } else if (b instanceof BigDecimal) {
+            return new CalculationResponse((BigDecimal) b);
+        } else if (b instanceof String) {
+            return new CalculationResponse((String) b);
+        } else {
+            throw new RuntimeException("unexpected type");
+        }
+    }
+
+    private <T> SseEmitter setEmitter(Observable<T> observable) {
         final SseEmitter responseBodyEmitter = new SseEmitter();
-        ConnectableObservable<CalculationResponse> connectableObservable = observable.publish();
-        connectableObservable.doOnCompleted(() -> responseBodyEmitter.complete());
-        connectableObservable.subscribe(m -> {
+        observable.subscribe(m -> {
             try {
                 logger.info("send response");
-                responseBodyEmitter.send(m);
+                responseBodyEmitter.send(createResponse(m));
             } catch (IOException e) {
+                logger.info("io exception");
                 responseBodyEmitter.completeWithError(e);
             }
         }, e -> {
+            logger.info("on fail");
             responseBodyEmitter.completeWithError(e);
+
+        }, () -> {
+            logger.info("complete");
+            responseBodyEmitter.complete();
         });
-        connectableObservable.connect();
+        //
         return responseBodyEmitter;
     }
 
@@ -80,7 +100,7 @@ public class CalculationController {
             @Override
             public void onSuccess(BigDecimal res) {
                 if (res == null) {
-                    throw new RuntimeException("Calculation failed.");
+                    result.setErrorResult(new RuntimeException("Calculation failed."));
                 } else {
                     result.setResult(new CalculationResponse(res));
                 }
@@ -96,7 +116,7 @@ public class CalculationController {
     }
 
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler({Exception.class})
     public FailedResponse handleException(Exception e) {
         logger.error("Calculation failed.", e);
         return new FailedResponse(e, "Calculation failed.");

@@ -11,13 +11,13 @@ public final class ListenableUtils {
     private ListenableUtils() {
     }
 
-    public static ListenableFuture<ResponseEntity<CalculationResponse>> convertFuture(
-            org.springframework.util.concurrent.ListenableFuture<ResponseEntity<CalculationResponse>> listenableFuture) {
+    public static <T> ListenableFuture<T> convertFuture(
+            org.springframework.util.concurrent.ListenableFuture<T> listenableFuture) {
 
-        final SettableFuture<ResponseEntity<CalculationResponse>> settableFutureTwo = SettableFuture.create();
-        listenableFuture.addCallback(new ListenableFutureCallback<ResponseEntity<CalculationResponse>>() {
+        final SettableFuture<T> settableFutureTwo = SettableFuture.create();
+        listenableFuture.addCallback(new ListenableFutureCallback<T>() {
             @Override
-            public void onSuccess(ResponseEntity<CalculationResponse> calculationResponseResponseEntity) {
+            public void onSuccess(T calculationResponseResponseEntity) {
                 settableFutureTwo.set(calculationResponseResponseEntity);
             }
 

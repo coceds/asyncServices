@@ -33,7 +33,6 @@ public class FacadeController {
     public SseEmitter randomStream() {
         final SseEmitter responseBodyEmitter = new SseEmitter();
         Observable<CalculationResponse> o = asyncFacadeService.randomStream(new BigDecimal("10"));
-        o.doOnCompleted(() -> responseBodyEmitter.complete());
         o.subscribe(m -> {
             try {
                 logger.info("send response");
@@ -43,27 +42,27 @@ public class FacadeController {
             }
         }, e -> {
             responseBodyEmitter.completeWithError(e);
-        });
+        }, () -> responseBodyEmitter.complete());
         return responseBodyEmitter;
     }
 
 
     @RequestMapping(value = "/calculate", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponse> calculate(@RequestBody CalculationRequest request) {
-        final ListenableFuture<CalculationResponse> future =
+        final ListenableFuture<BigDecimal> future =
                 asyncFacadeService.calculate(request.getParameter());
         return setResult(future);
     }
 
-    private DeferredResult<CalculationResponse> setResult(ListenableFuture<CalculationResponse> response) {
+    private DeferredResult<CalculationResponse> setResult(ListenableFuture<BigDecimal> response) {
         final DeferredResult<CalculationResponse> result = new DeferredResult<>();
-        Futures.addCallback(response, new FutureCallback<CalculationResponse>() {
+        Futures.addCallback(response, new FutureCallback<BigDecimal>() {
             @Override
-            public void onSuccess(CalculationResponse response) {
-                if (response.getResult() == null) {
-                    throw new RuntimeException("Calculation failed.");
+            public void onSuccess(BigDecimal response) {
+                if (response == null) {
+                    result.setErrorResult(new RuntimeException("Calculation failed."));
                 } else {
-                    result.setResult(response);
+                    result.setResult(new CalculationResponse(response));
                 }
             }
 

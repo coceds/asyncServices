@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import rx.Observable;
 
 import java.math.BigDecimal;
@@ -44,18 +45,14 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
         Observable<CalculationResponse> one = calculationClient.randomStreamBigDecimal(new CalculationRequest(parameter));
         Observable<CalculationResponse> two = calculationClient.randomStreamBoolean();
         Observable<CalculationResponse> observable = Observable.zip(one, two, (calculationResponse, calculationResponse2) -> {
-            if (!calculationResponse2.isFlag()) {
-                return calculationResponse2;
-            } else {
-                calculationResponse.setFlag(true);
-                return calculationResponse;
-            }
-        });
+            calculationResponse2.setResult(calculationResponse.getResult());
+            return calculationResponse2;
+        }).filter(calculationResponse -> calculationResponse.isFlag());
         return observable;
     }
 
     @Override
-    public ListenableFuture<CalculationResponse> calculate(BigDecimal parameter) {
+    public ListenableFuture<BigDecimal> calculate(BigDecimal parameter) {
 
         List<ListenableFuture<ResponseEntity<CalculationResponse>>> futures = new ArrayList<>();
 
@@ -68,7 +65,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
         ListenableFuture<List<ResponseEntity<CalculationResponse>>> successfulQueries = Futures.allAsList(futures);
 
-        AsyncFunction<List<ResponseEntity<CalculationResponse>>, CalculationResponse> queryFunction =
+        AsyncFunction<List<ResponseEntity<CalculationResponse>>, BigDecimal> queryFunction =
                 (List<ResponseEntity<CalculationResponse>> entities) -> {
                     final List<BigDecimal> results = entities.stream().map(e -> {
                         if (e.getBody().getResult() == null) {
@@ -79,7 +76,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
                         }
                     }).collect(Collectors.toList());
                     return executorService.submit(() ->
-                            new CalculationResponse(calculation.calculate(ImmutableList.copyOf(results)))
+                            calculation.calculate(ImmutableList.copyOf(results))
                     );
                 };
 

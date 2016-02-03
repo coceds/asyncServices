@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 public interface AsyncFacadeService {
 
-    ListenableFuture<CalculationResponse> calculate(BigDecimal parameter);
+    ListenableFuture<BigDecimal> calculate(BigDecimal parameter);
 
     Observable<CalculationResponse> randomStream(BigDecimal parameter);
 }

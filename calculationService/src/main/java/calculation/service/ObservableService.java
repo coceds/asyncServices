@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 public interface ObservableService {
 
-    Observable<CalculationResponse> getRandomStream(BigDecimal max);
+    Observable<BigDecimal> getRandomStream(BigDecimal max);
 
-    Observable<CalculationResponse> getRandomStreamBoolean();
+    Observable<Boolean> getRandomStreamBoolean();
 }

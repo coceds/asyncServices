@@ -8,6 +8,7 @@ import facade.client.CalculationEndPoints;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
+import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,22 +34,28 @@ public class AsyncStreamClientImpl implements AsyncStreamClient {
             if (request != null) {
                 content = mapper.writeValueAsString(request);
             }
-            return ObservableHttp.createRequest(
-                    HttpAsyncMethods.createPost(baseUrl + endPoint.getUrl(), content,
-                            ContentType.APPLICATION_JSON), asyncClient)
+            final HttpAsyncRequestProducer requestProducer = HttpAsyncMethods.createPost(baseUrl + endPoint.getUrl(), content,
+                    ContentType.APPLICATION_JSON);
+            return ObservableHttp.createRequest(requestProducer, asyncClient)
                     .toObservable()
-                    .flatMap(observableHttpResponse ->
-                            observableHttpResponse.getContent().map(bb ->
-                                    {
-                                        try {
-                                            String value = new String(bb);
-                                            value = value.replace("data:", "");
-                                            return mapper.readValue(value, endPoint.getTypeReference());
-                                        } catch (IOException e) {
-                                            throw new RuntimeException(e);
+                    .doOnCompleted(() -> {
+                        System.out.println("completed");
+                        throw new RuntimeException("close connection");
+                    }).flatMap(observableHttpResponse -> {
+                                return observableHttpResponse.getContent().map(bb ->
+                                        {
+                                            try {
+                                                String value = new String(bb);
+                                                value = value.replace("data:", "");
+                                                System.out.println(value);
+                                                return mapper.readValue(value, endPoint.getTypeReference());
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
                                         }
-                                    }
-                            )
+                                );
+                            }
+
                     );
         } catch (UnsupportedEncodingException | JsonProcessingException e) {
             throw new RuntimeException(e);
