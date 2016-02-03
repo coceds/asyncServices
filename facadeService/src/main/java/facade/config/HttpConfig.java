@@ -19,7 +19,7 @@ public class HttpConfig {
 
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 100;
 
-    private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 5;
+    private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 10;
 
     private static final int DEFAULT_READ_TIMEOUT_MILLISECONDS = (60 * 1000);
 
@@ -46,6 +46,8 @@ public class HttpConfig {
             connectionManager.setDefaultMaxPerRoute(DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
             RequestConfig config = RequestConfig.custom()
                     .setConnectTimeout(DEFAULT_READ_TIMEOUT_MILLISECONDS)
+                    .setSocketTimeout(DEFAULT_READ_TIMEOUT_MILLISECONDS)
+                    .setConnectionRequestTimeout(DEFAULT_READ_TIMEOUT_MILLISECONDS)
                     .build();
 
             CloseableHttpAsyncClient httpclient = HttpAsyncClientBuilder

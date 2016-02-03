@@ -12,7 +12,10 @@ public enum CalculationEndPoints {
     MULTIPLY_BY_THREE(CalculationClient.MULTIPLY_BY_THREE, HttpMethod.POST, new TypeReference<CalculationResponse>() {
     }, CalculationResponse.class, MediaType.APPLICATION_JSON),
     RANDOM_STREAM(CalculationClient.RANDOM_STREAM, HttpMethod.POST, new TypeReference<CalculationResponse>() {
+    }, CalculationResponse.class, MediaType.APPLICATION_JSON),
+    RANDOM_STREAM_BOOLEAN(CalculationClient.RANDOM_STREAM_BOOLEAN, HttpMethod.POST, new TypeReference<CalculationResponse>() {
     }, CalculationResponse.class, MediaType.APPLICATION_JSON);
+
 
     private final String url;
     private final HttpMethod httpMethod;

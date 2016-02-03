@@ -46,11 +46,11 @@ public class CalculationController {
 
     private SseEmitter setEmitter(Observable<CalculationResponse> observable) {
         final SseEmitter responseBodyEmitter = new SseEmitter();
-        observable.doOnCompleted(() -> responseBodyEmitter.complete());
         ConnectableObservable<CalculationResponse> connectableObservable = observable.publish();
-
+        connectableObservable.doOnCompleted(() -> responseBodyEmitter.complete());
         connectableObservable.subscribe(m -> {
             try {
+                logger.info("send response");
                 responseBodyEmitter.send(m);
             } catch (IOException e) {
                 responseBodyEmitter.completeWithError(e);

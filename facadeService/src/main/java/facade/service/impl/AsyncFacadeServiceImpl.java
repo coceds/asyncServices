@@ -1,7 +1,5 @@
 package facade.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.*;
@@ -11,9 +9,6 @@ import facade.dto.CalculationResponse;
 import facade.service.AsyncFacadeService;
 import facade.service.Calculation;
 import facade.utils.ListenableUtils;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.nio.client.methods.HttpAsyncMethods;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import rx.Observable;
-import rx.apache.http.ObservableHttp;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +32,6 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     private CalculationClient calculationClient;
     @Autowired
     private Calculation calculation;
-    @Autowired
-    private CloseableHttpAsyncClient asyncClient;
 
     private ListeningExecutorService executorService;
     private ObjectMapper mapper = new ObjectMapper();
@@ -51,48 +41,17 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
     @Override
     public Observable<CalculationResponse> randomStream(BigDecimal parameter) {
-        Observable<CalculationResponse> observable;
-        try {
-
-            String content = mapper.writeValueAsString(new CalculationRequest(parameter));
-            Observable<CalculationResponse> one = processPost(content, "/calculationService/randomStream");
-            Observable<CalculationResponse> two = processPost("", "/calculationService/randomStreamBoolean");
-            observable = Observable.zip(one, two, (calculationResponse, calculationResponse2) -> {
-                if (!calculationResponse2.isFlag()) {
-                    return calculationResponse2;
-                } else {
-                    calculationResponse.setFlag(true);
-                    return calculationResponse;
-                }
-            });
-        } catch (UnsupportedEncodingException | JsonProcessingException e) {
-            logger.error("error", e);
-            throw new RuntimeException(e);
-        }
+        Observable<CalculationResponse> one = calculationClient.randomStreamBigDecimal(new CalculationRequest(parameter));
+        Observable<CalculationResponse> two = calculationClient.randomStreamBoolean();
+        Observable<CalculationResponse> observable = Observable.zip(one, two, (calculationResponse, calculationResponse2) -> {
+            if (!calculationResponse2.isFlag()) {
+                return calculationResponse2;
+            } else {
+                calculationResponse.setFlag(true);
+                return calculationResponse;
+            }
+        });
         return observable;
-    }
-
-    private Observable<CalculationResponse> processPost(String content, String url) throws UnsupportedEncodingException {
-        TypeReference<CalculationResponse> typeReference = new TypeReference<CalculationResponse>() {
-        };
-        return ObservableHttp.createRequest(
-                HttpAsyncMethods.createPost(baseUrl + url, content,
-                        ContentType.APPLICATION_JSON), asyncClient)
-                .toObservable()
-                .flatMap(observableHttpResponse ->
-                        observableHttpResponse.getContent().map(bb ->
-                                {
-                                    try {
-                                        String value = new String(bb);
-                                        value = value.replace("data:", "");
-                                        logger.info(value);
-                                        return mapper.readValue(value, typeReference);
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                        )
-                );
     }
 
     @Override

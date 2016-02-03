@@ -1,5 +1,6 @@
 package facade.client.impl;
 
+import facade.client.AsyncStreamClient;
 import facade.client.CalculationClient;
 import facade.client.CalculationEndPoints;
 import facade.dto.CalculationRequest;
@@ -8,12 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
+import rx.Observable;
 
 @Service
 class CalculationClientImpl implements CalculationClient {
 
     @Autowired
     private AsyncRestClientImpl asyncRestClient;
+    @Autowired
+    private AsyncStreamClient asyncStreamClient;
 
     @Override
     public ListenableFuture<ResponseEntity<CalculationResponse>> multipleByTwo(CalculationRequest request) {
@@ -26,7 +30,12 @@ class CalculationClientImpl implements CalculationClient {
     }
 
     @Override
-    public ListenableFuture<ResponseEntity<CalculationResponse>> randomStream(CalculationRequest request) {
-        return asyncRestClient.exchange(CalculationEndPoints.RANDOM_STREAM, request);
+    public Observable<CalculationResponse> randomStreamBigDecimal(CalculationRequest request) {
+        return asyncStreamClient.createPost(CalculationEndPoints.RANDOM_STREAM, request);
+    }
+
+    @Override
+    public Observable<CalculationResponse> randomStreamBoolean() {
+        return asyncStreamClient.createPost(CalculationEndPoints.RANDOM_STREAM_BOOLEAN, null);
     }
 }
