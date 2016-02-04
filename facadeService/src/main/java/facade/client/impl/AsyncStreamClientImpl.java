@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import rx.Observable;
 import rx.apache.http.ObservableHttp;
+import rx.apache.http.ObservableHttpResponse;
+import rx.functions.Func1;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -36,30 +38,33 @@ public class AsyncStreamClientImpl implements AsyncStreamClient {
             }
             final HttpAsyncRequestProducer requestProducer = HttpAsyncMethods.createPost(baseUrl + endPoint.getUrl(), content,
                     ContentType.APPLICATION_JSON);
-            return ObservableHttp.createRequest(requestProducer, asyncClient)
-                    .toObservable()
-                    .doOnCompleted(() -> {
-                        System.out.println("completed");
-                        throw new RuntimeException("close connection");
-                    }).flatMap(observableHttpResponse -> {
-                                return observableHttpResponse.getContent().map(bb ->
-                                        {
-                                            try {
-                                                String value = new String(bb);
-                                                value = value.replace("data:", "");
-                                                System.out.println(value);
-                                                return mapper.readValue(value, endPoint.getTypeReference());
-                                            } catch (IOException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        }
-                                );
-                            }
+            ObservableHttp<ObservableHttpResponse> req = ObservableHttp.createRequest(requestProducer, asyncClient);
 
-                    );
+
+            final Observable<ObservableHttpResponse> observable = req
+                    .toObservable();
+
+
+            Func1<ObservableHttpResponse, Observable<? extends T>> func = observableHttpResponse -> {
+                return observableHttpResponse.getContent().map(bb ->
+                        {
+                            try {
+                                String value = new String(bb);
+                                value = value.replace("data:", "");
+                                System.out.println(value);
+                                return mapper.readValue(value, endPoint.getTypeReference());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                );
+            };
+            final Observable<T> tObservable = observable.flatMap(func);
+            return Observable.zip(observable, tObservable, (observableHttpResponse, t) -> {
+                return t;
+            });
         } catch (UnsupportedEncodingException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-
     }
 }

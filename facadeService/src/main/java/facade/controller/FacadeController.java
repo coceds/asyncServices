@@ -31,19 +31,21 @@ public class FacadeController {
     //@RequestBody CalculationRequest request
     @RequestMapping(value = "/randomStream", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStream() {
-        final SseEmitter responseBodyEmitter = new SseEmitter();
+        final SseEmitter emitter = new SseEmitter();
         Observable<CalculationResponse> o = asyncFacadeService.randomStream(new BigDecimal("10"));
         o.subscribe(m -> {
             try {
-                logger.info("send response");
-                responseBodyEmitter.send(m);
+                emitter.send(m);
             } catch (IOException e) {
-                responseBodyEmitter.completeWithError(e);
+                emitter.completeWithError(e);
             }
         }, e -> {
-            responseBodyEmitter.completeWithError(e);
-        }, () -> responseBodyEmitter.complete());
-        return responseBodyEmitter;
+            emitter.completeWithError(e);
+        }, () -> {
+            System.out.println("emitter complete");
+            emitter.complete();
+        });
+        return emitter;
     }
 
 
