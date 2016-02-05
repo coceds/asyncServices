@@ -1,15 +1,18 @@
 package facade.controller;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import facade.dto.CalculationRequest;
 import facade.dto.CalculationResponse;
 import facade.dto.FailedResponse;
+import facade.dto.Simple;
 import facade.service.AsyncFacadeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +22,10 @@ import rx.Observable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
+
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
 public class FacadeController {
@@ -27,6 +34,34 @@ public class FacadeController {
 
     @Autowired
     private AsyncFacadeService asyncFacadeService;
+
+    @RequestMapping(value = "/calculateHateoas", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public DeferredResult<Simple> calculateHateoas(@RequestBody CalculationRequest request) {
+        final ListenableFuture<BigDecimal> future =
+                asyncFacadeService.calculate(request.getParameter());
+        final DeferredResult<Simple> result = new DeferredResult<>();
+        final List<Link> immutable = ImmutableList.of(linkTo(methodOn(FacadeController.class)
+                .calculateHateoas(request)).withSelfRel());
+        Futures.addCallback(future, new FutureCallback<BigDecimal>() {
+            @Override
+            public void onSuccess(BigDecimal response) {
+                if (response == null) {
+                    result.setErrorResult(new RuntimeException("Calculation failed."));
+                } else {
+                    Simple simple = new Simple(response);
+                    simple.add(immutable);
+                    result.setResult(simple);
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                result.setErrorResult(throwable);
+            }
+        });
+        return result;
+    }
+
 
     //@RequestBody CalculationRequest request
     @RequestMapping(value = "/randomStream", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})

@@ -6,9 +6,7 @@ import java.math.BigDecimal;
 public class CalculationResponse {
 
     private BigDecimal result;
-
     private String status;
-
     private boolean flag;
 
     public CalculationResponse() {
@@ -49,4 +47,5 @@ public class CalculationResponse {
     public void setStatus(String status) {
         this.status = status;
     }
+
 }
