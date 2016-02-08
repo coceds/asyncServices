@@ -60,9 +60,11 @@ public class AsyncStreamClientImpl implements AsyncStreamClient {
                 );
             };
             final Observable<T> tObservable = observable.flatMap(func);
+//            return tObservable;
             return Observable.zip(observable, tObservable, (observableHttpResponse, t) -> {
                 return t;
             });
+
         } catch (UnsupportedEncodingException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }

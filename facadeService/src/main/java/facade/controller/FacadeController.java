@@ -84,6 +84,44 @@ public class FacadeController {
     }
 
 
+    @RequestMapping(value = "/calculateWithActor", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public DeferredResult<CalculationResponse> calculateWithActor() {
+        final ListenableFuture<CalculationResponse> future =
+                asyncFacadeService.calculateAndGetFirstValue(new BigDecimal("10"));
+        final DeferredResult<CalculationResponse> result = new DeferredResult<>();
+        Futures.addCallback(future, new FutureCallback<CalculationResponse>() {
+            @Override
+            public void onSuccess(CalculationResponse response) {
+                result.setResult(response);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                result.setErrorResult(throwable);
+            }
+        });
+        return result;
+    }
+
+    @RequestMapping(value = "/getByActorId", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public DeferredResult<CalculationResponse> getByActorId(@RequestParam Integer id) {
+        final ListenableFuture<CalculationResponse> future = asyncFacadeService.getNextById(id);
+        final DeferredResult<CalculationResponse> result = new DeferredResult<>();
+        Futures.addCallback(future, new FutureCallback<CalculationResponse>() {
+            @Override
+            public void onSuccess(CalculationResponse response) {
+                result.setResult(response);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                result.setErrorResult(throwable);
+            }
+        });
+        return result;
+    }
+
+
     @RequestMapping(value = "/calculate", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponse> calculate(@RequestBody CalculationRequest request) {
         final ListenableFuture<BigDecimal> future =

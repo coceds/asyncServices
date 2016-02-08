@@ -38,12 +38,14 @@ public class CalculationController {
 
     @RequestMapping(value = "/randomStream", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStream(@RequestBody CalculationRequest request) {
+        logger.info("/randomStream call");
         Observable<BigDecimal> o = observableService.getRandomStream(new BigDecimal("10"));
         return setEmitter(o);
     }
 
     @RequestMapping(value = "/randomStreamBoolean", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
     public SseEmitter randomStreamBoolean() {
+        logger.info("/randomStreamBoolean call");
         Observable<Boolean> o = observableService.getRandomStreamBoolean();
         return setEmitter(o);
     }
