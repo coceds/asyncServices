@@ -49,24 +49,42 @@ public class AsyncStreamClientImpl implements AsyncStreamClient {
                 ObservableHttp.createRequest(requestProducer, asyncClient)
                         .toObservable();
 
-        return Observable.create(subscriber -> {
-            observable.subscribe(observableHttpResponse -> {
-                observableHttpResponse.getContent().subscribe(bytes -> {
-                    try {
-                        String value = new String(bytes);
-                        value = value.replace("data:", "");
-                        subscriber.onNext((T) mapper.readValue(value, typeReference));
-                    } catch (IOException e) {
-                        subscriber.onError(e);
-                    }
+//        return observable.flatMap(response -> {
+//            return Observable.<T>create(subscriber -> {
+//                response.getContent().subscribe(bytes -> {
+//                    try {
+//                        String value = new String(bytes);
+//                        value = value.replace("data:", "");
+//                        subscriber.onNext(mapper.<T>readValue(value, typeReference));
+//                    } catch (IOException e) {
+//                        subscriber.onError(e);
+//                    }
+//                }, throwable -> {
+//                    subscriber.onError(throwable);
+//                }, () -> {
+//                    subscriber.onCompleted();
+//                });
+//            });
+//        });
+
+        return Observable.<T>create(subscriber ->
+                observable.subscribe(observableHttpResponse -> {
+                    observableHttpResponse.getContent().subscribe(bytes -> {
+                        try {
+                            String value = new String(bytes);
+                            value = value.replace("data:", "");
+                            subscriber.onNext(mapper.<T>readValue(value, typeReference));
+                        } catch (IOException e) {
+                            subscriber.onError(e);
+                        }
+                    }, throwable -> {
+                        subscriber.onError(throwable);
+                    });
                 }, throwable -> {
                     subscriber.onError(throwable);
-                });
-            }, throwable -> {
-                subscriber.onError(throwable);
-            }, () -> {
-                subscriber.onCompleted();
-            });
-        });
+                }, () -> {
+                    subscriber.onCompleted();
+                })
+        );
     }
 }

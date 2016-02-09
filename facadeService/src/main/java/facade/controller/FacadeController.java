@@ -19,6 +19,7 @@ import rx.Observable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -83,18 +84,24 @@ public class FacadeController {
 
     @RequestMapping(value = "/calculateWithActor", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponseResource> calculateWithActor() {
-        final Integer key = asyncFacadeService.randomStreamWithActors(new BigDecimal("10"));
-        ListenableFuture<CalculationResponse> future = asyncFacadeService.getNextById(key);
-        Link self = linkTo(methodOn(FacadeController.class).calculateWithActor()).withSelfRel();
-        Link next = linkTo(methodOn(FacadeController.class).getByActorId(key)).withRel("next");
-        return setResultForActor(future, ImmutableList.of(self, next));
+        final String uuid = asyncFacadeService.randomStreamWithActors(new BigDecimal("10"));
+        FutureResponse<CalculationResponse> future = asyncFacadeService.getNextById(uuid);
+        List<Link> links = new ArrayList<>();
+        links.add(linkTo(methodOn(FacadeController.class).calculateWithActor()).withSelfRel());
+        if (future.isNext()) {
+            links.add(linkTo(methodOn(FacadeController.class).getByActorId(uuid)).withRel("next"));
+        }
+        return setResultForActor(future.getFuture(), ImmutableList.copyOf(links));
     }
 
     @RequestMapping(value = "/getByActorId", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
-    public DeferredResult<CalculationResponseResource> getByActorId(@RequestParam Integer id) {
-        final ListenableFuture<CalculationResponse> future = asyncFacadeService.getNextById(id);
-        Link next = linkTo(methodOn(FacadeController.class).getByActorId(id)).withRel("next");
-        return setResultForActor(future, ImmutableList.of(next));
+    public DeferredResult<CalculationResponseResource> getByActorId(@RequestParam String uuid) {
+        final FutureResponse<CalculationResponse> future = asyncFacadeService.getNextById(uuid);
+        List<Link> links = new ArrayList<>();
+        if (future.isNext()) {
+            links.add(linkTo(methodOn(FacadeController.class).getByActorId(uuid)).withRel("next"));
+        }
+        return setResultForActor(future.getFuture(), ImmutableList.copyOf(links));
     }
 
 

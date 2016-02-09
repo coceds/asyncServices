@@ -2,6 +2,7 @@ package facade.service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import facade.dto.CalculationResponse;
+import facade.dto.FutureResponse;
 import rx.Observable;
 
 import java.math.BigDecimal;
@@ -12,7 +13,7 @@ public interface AsyncFacadeService {
 
     Observable<CalculationResponse> randomStream(BigDecimal parameter);
 
-    Integer randomStreamWithActors(final BigDecimal parameter);
+    String randomStreamWithActors(final BigDecimal parameter);
 
-    ListenableFuture<CalculationResponse> getNextById(Integer id);
+    FutureResponse<CalculationResponse> getNextById(String uuid);
 }
