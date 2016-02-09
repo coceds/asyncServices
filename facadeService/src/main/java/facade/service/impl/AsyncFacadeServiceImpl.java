@@ -1,11 +1,17 @@
 package facade.service.impl;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.*;
-import facade.actor.*;
+import facade.actors.manager.Action;
+import facade.actors.manager.CreateAction;
+import facade.actors.manager.DeleteAction;
+import facade.actors.manager.FindAction;
+import facade.actors.queue.*;
 import facade.client.CalculationClient;
 import facade.dto.CalculationRequest;
 import facade.dto.CalculationResponse;
+import facade.dto.CreateActorRequest;
 import facade.dto.FutureResponse;
 import facade.service.AsyncFacadeService;
 import facade.service.Calculation;
@@ -13,6 +19,7 @@ import facade.utils.ListenableUtils;
 import fj.Unit;
 import fj.control.parallel.Actor;
 import fj.control.parallel.Strategy;
+import fj.function.Effect1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +29,9 @@ import org.springframework.stereotype.Service;
 import rx.Observable;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,7 +49,74 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
     private ListeningExecutorService executorService;
     private final Map<String, Actor<Message>> observableMap = new ConcurrentHashMap<>();
-    private final AtomicInteger keyId = new AtomicInteger(0);
+
+    private final Actor<Action> manager = Actor.queueActor(strategy, new Effect1<Action>() {
+
+        private final Map<String, Actor<Message>> actors = new HashMap<>();
+
+        @Override
+        public void f(Action action) {
+            if (action instanceof CreateAction) {
+                CreateAction ac = (CreateAction) action;
+                String uuid = UUID.randomUUID().toString();
+                final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance());
+                actors.put(uuid, actor);
+                CreateActorRequest<Message> response = new CreateActorRequest<>(uuid, actor);
+                ac.getFuture().set(response);
+            } else if (action instanceof FindAction) {
+                FindAction ac = (FindAction) action;
+                Actor<Message> actor = actors.get(ac.getUuid());
+                if (actor != null) {
+                    ac.getFuture().set(actor);
+                } else {
+                    ac.getFuture().setException(new RuntimeException("actor not found."));
+                }
+            } else if (action instanceof DeleteAction) {
+                DeleteAction ac = (DeleteAction) action;
+                actors.remove(ac.getUuid());
+            }
+        }
+    });
+
+    public ListenableFuture<String> randomStreamWithManagerActors(final BigDecimal parameter) {
+        final Observable<CalculationResponse> state = randomStream(parameter);
+        final SettableFuture<CreateActorRequest<Message>> future = SettableFuture.create();
+        final SettableFuture<String> result = SettableFuture.create();
+        manager.act(new CreateAction(future));
+        Futures.addCallback(future, new FutureCallback<CreateActorRequest<Message>>() {
+            @Override
+            public void onSuccess(CreateActorRequest<Message> request) {
+                state.subscribe(calculationResponse ->
+                                request.getActor().act(new NextMessage(calculationResponse))
+                        , throwable ->
+                                request.getActor().act(new ExceptionMessage(throwable))
+                        , () ->
+                                request.getActor().act(new FinishMessage())
+                );
+                result.set(request.getUuid());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                result.setException(throwable);
+            }
+        });
+        return result;
+    }
+
+    public ListenableFuture<FutureResponse<CalculationResponse>> getNextByIdWithManager(String uuid) {
+        final SettableFuture<Actor<Message>> future = SettableFuture.create();
+        manager.act(new FindAction(uuid, future));
+        ListenableFuture<FutureResponse<CalculationResponse>> result = Futures.transform(future, new Function<Actor<Message>, FutureResponse<CalculationResponse>>() {
+            @Override
+            public FutureResponse<CalculationResponse> apply(Actor<Message> actor) {
+                FutureResponse<CalculationResponse> futureResponse = new FutureResponse<>(SettableFuture.create());
+                actor.act(new ReadMessage(futureResponse));
+                return futureResponse;
+            }
+        });
+        return result;
+    }
 
     @Override
     public String randomStreamWithActors(final BigDecimal parameter) {

@@ -1,4 +1,4 @@
-package facade.actor;
+package facade.actors.queue;
 
 
 import com.google.common.util.concurrent.SettableFuture;

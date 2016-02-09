@@ -1,11 +1,11 @@
-package facade.actor;
+package facade.actors.queue;
 
 
 import facade.dto.CalculationResponse;
 
 public class NextMessage implements Message {
 
-    private CalculationResponse response;
+    private final CalculationResponse response;
 
     public NextMessage(CalculationResponse response) {
         this.response = response;
@@ -13,9 +13,5 @@ public class NextMessage implements Message {
 
     public CalculationResponse getResponse() {
         return response;
-    }
-
-    public void setResponse(CalculationResponse response) {
-        this.response = response;
     }
 }

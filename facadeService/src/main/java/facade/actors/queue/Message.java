@@ -1,4 +1,4 @@
-package facade.actor;
+package facade.actors.queue;
 
 
 public interface Message {
