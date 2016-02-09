@@ -89,12 +89,10 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
             }
         });
         state.subscribe(calculationResponse -> {
-            System.out.println("act");
             actor.act(calculationResponse);
         }, throwable -> {
             actor.act(throwable);
         }, () -> {
-            System.out.println("cimp");
             actor.act(true);
         });
         observableMap.put(key, actor);
@@ -116,7 +114,6 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
     @Override
     public Observable<CalculationResponse> randomStream(BigDecimal parameter) {
-        System.out.println("randomStream call");
         Observable<CalculationResponse> one = calculationClient.randomStreamBigDecimal(new CalculationRequest(parameter));
         Observable<CalculationResponse> two = calculationClient.randomStreamBoolean();
         Observable<CalculationResponse> observable = Observable.zip(one, two, (calculationResponse, calculationResponse2) -> {
