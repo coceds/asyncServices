@@ -2,6 +2,7 @@ package facade.client.impl;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import facade.client.AsyncStreamClient;
 import facade.client.CalculationEndPoints;
@@ -37,31 +38,35 @@ public class AsyncStreamClientImpl implements AsyncStreamClient {
             }
             final HttpAsyncRequestProducer requestProducer = HttpAsyncMethods.createPost(baseUrl + endPoint.getUrl(), content,
                     ContentType.APPLICATION_JSON);
-            final Observable<ObservableHttpResponse> observable =
-                    ObservableHttp.createRequest(requestProducer, asyncClient)
-                            .toObservable();
-
-            return Observable.create(subscriber -> {
-                observable.subscribe(observableHttpResponse -> {
-                    observableHttpResponse.getContent().subscribe(bytes -> {
-                        try {
-                            String value = new String(bytes);
-                            value = value.replace("data:", "");
-                            subscriber.onNext((T) mapper.readValue(value, endPoint.getTypeReference()));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }, throwable -> {
-                        subscriber.onError(throwable);
-                    });
-                }, throwable -> {
-                    subscriber.onError(throwable);
-                }, () -> {
-                    subscriber.onCompleted();
-                });
-            });
+            return processRequest(endPoint.getTypeReference(), requestProducer);
         } catch (UnsupportedEncodingException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private <T> Observable<T> processRequest(TypeReference typeReference, HttpAsyncRequestProducer requestProducer) {
+        final Observable<ObservableHttpResponse> observable =
+                ObservableHttp.createRequest(requestProducer, asyncClient)
+                        .toObservable();
+
+        return Observable.create(subscriber -> {
+            observable.subscribe(observableHttpResponse -> {
+                observableHttpResponse.getContent().subscribe(bytes -> {
+                    try {
+                        String value = new String(bytes);
+                        value = value.replace("data:", "");
+                        subscriber.onNext((T) mapper.readValue(value, typeReference));
+                    } catch (IOException e) {
+                        subscriber.onError(e);
+                    }
+                }, throwable -> {
+                    subscriber.onError(throwable);
+                });
+            }, throwable -> {
+                subscriber.onError(throwable);
+            }, () -> {
+                subscriber.onCompleted();
+            });
+        });
     }
 }
