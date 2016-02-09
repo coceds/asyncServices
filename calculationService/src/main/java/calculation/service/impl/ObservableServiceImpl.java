@@ -40,7 +40,7 @@ public class ObservableServiceImpl implements ObservableService {
             BigDecimal random = new BigDecimal(ThreadLocalRandom.current().nextInt(0, max.toBigInteger().intValue()));
             s.onNext(random);
             s.onCompleted();
-        }).subscribeOn(Schedulers.from(executorService)).delay(700l, TimeUnit.MILLISECONDS).repeat(3l);
+        }).subscribeOn(Schedulers.from(executorService)).delay(700l, TimeUnit.MILLISECONDS).repeat(10l);
 //        List<BigDecimal> range = IntStream.range(0, max.toBigInteger().intValue())
 //                .boxed().map(integer -> new BigDecimal(integer))
 //                .limit(10)
@@ -58,7 +58,7 @@ public class ObservableServiceImpl implements ObservableService {
             logger.info("new random boolean");
             s.onNext(ThreadLocalRandom.current().nextBoolean());
             s.onCompleted();
-        }).subscribeOn(Schedulers.from(executorService)).delay(800l, TimeUnit.MILLISECONDS).repeat(3l);
+        }).subscribeOn(Schedulers.from(executorService)).delay(800l, TimeUnit.MILLISECONDS).repeat(10l);
     }
 
     @Override

@@ -55,6 +55,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
             private final Queue<CalculationResponse> elements = new LinkedList<>();
             private final Queue<SettableFuture<CalculationResponse>> futures = new LinkedList<>();
 
+            @Override
             public void f(Object object) {
                 if (object instanceof Boolean) {
                     finish = (Boolean) object;
@@ -83,14 +84,17 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
                     finish = true;
                 } else {
                     logger.error("invalid type");
+                    throw new RuntimeException("invalid type");
                 }
             }
         });
         state.subscribe(calculationResponse -> {
+            System.out.println("act");
             actor.act(calculationResponse);
         }, throwable -> {
             actor.act(throwable);
         }, () -> {
+            System.out.println("cimp");
             actor.act(true);
         });
         observableMap.put(key, actor);
@@ -118,7 +122,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
         Observable<CalculationResponse> observable = Observable.zip(one, two, (calculationResponse, calculationResponse2) -> {
             calculationResponse2.setResult(calculationResponse.getResult());
             return calculationResponse2;
-        });//.filter(calculationResponse -> calculationResponse.isFlag());
+        }).filter(calculationResponse -> calculationResponse.isFlag());
         return observable;
     }
 
