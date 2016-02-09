@@ -12,7 +12,7 @@ public interface AsyncFacadeService {
 
     Observable<CalculationResponse> randomStream(BigDecimal parameter);
 
-    ListenableFuture<CalculationResponse> calculateAndGetFirstValue(final BigDecimal parameter);
+    Integer randomStreamWithActors(final BigDecimal parameter);
 
     ListenableFuture<CalculationResponse> getNextById(Integer id);
 }

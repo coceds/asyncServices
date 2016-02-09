@@ -46,7 +46,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     private final AtomicInteger keyId = new AtomicInteger(0);
 
     @Override
-    public ListenableFuture<CalculationResponse> calculateAndGetFirstValue(final BigDecimal parameter) {
+    public Integer randomStreamWithActors(final BigDecimal parameter) {
         final Integer key = keyId.incrementAndGet();
         final Observable<CalculationResponse> state = randomStream(parameter);
 
@@ -96,9 +96,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
             actor.act(true);
         });
         observableMap.put(key, actor);
-        final SettableFuture<CalculationResponse> settableFuture = SettableFuture.create();
-        actor.act(settableFuture);
-        return settableFuture;
+        return key;
     }
 
     @Override

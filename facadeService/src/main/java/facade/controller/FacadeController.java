@@ -4,10 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import facade.dto.CalculationRequest;
-import facade.dto.CalculationResponse;
-import facade.dto.FailedResponse;
-import facade.dto.Simple;
+import facade.dto.*;
 import facade.service.AsyncFacadeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,40 +82,19 @@ public class FacadeController {
 
 
     @RequestMapping(value = "/calculateWithActor", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
-    public DeferredResult<CalculationResponse> calculateWithActor() {
-        final ListenableFuture<CalculationResponse> future =
-                asyncFacadeService.calculateAndGetFirstValue(new BigDecimal("10"));
-        final DeferredResult<CalculationResponse> result = new DeferredResult<>();
-        Futures.addCallback(future, new FutureCallback<CalculationResponse>() {
-            @Override
-            public void onSuccess(CalculationResponse response) {
-                result.setResult(response);
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                result.setErrorResult(throwable);
-            }
-        });
-        return result;
+    public DeferredResult<CalculationResponseResource> calculateWithActor() {
+        final Integer key = asyncFacadeService.randomStreamWithActors(new BigDecimal("10"));
+        ListenableFuture<CalculationResponse> future = asyncFacadeService.getNextById(key);
+        Link self = linkTo(methodOn(FacadeController.class).calculateWithActor()).withSelfRel();
+        Link next = linkTo(methodOn(FacadeController.class).getByActorId(key)).withRel("next");
+        return setResultForActor(future, ImmutableList.of(self, next));
     }
 
     @RequestMapping(value = "/getByActorId", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
-    public DeferredResult<CalculationResponse> getByActorId(@RequestParam Integer id) {
+    public DeferredResult<CalculationResponseResource> getByActorId(@RequestParam Integer id) {
         final ListenableFuture<CalculationResponse> future = asyncFacadeService.getNextById(id);
-        final DeferredResult<CalculationResponse> result = new DeferredResult<>();
-        Futures.addCallback(future, new FutureCallback<CalculationResponse>() {
-            @Override
-            public void onSuccess(CalculationResponse response) {
-                result.setResult(response);
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                result.setErrorResult(throwable);
-            }
-        });
-        return result;
+        Link next = linkTo(methodOn(FacadeController.class).getByActorId(id)).withRel("next");
+        return setResultForActor(future, ImmutableList.of(next));
     }
 
 
@@ -147,6 +123,25 @@ public class FacadeController {
             }
         });
         return result;
+    }
+
+    private DeferredResult<CalculationResponseResource> setResultForActor(ListenableFuture<CalculationResponse> response, List<Link> links) {
+        final DeferredResult<CalculationResponseResource> result = new DeferredResult<>();
+        Futures.addCallback(response, new FutureCallback<CalculationResponse>() {
+            @Override
+            public void onSuccess(CalculationResponse response) {
+                CalculationResponseResource res = new CalculationResponseResource(response);
+                res.add(links);
+                result.setResult(res);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                result.setErrorResult(throwable);
+            }
+        });
+        return result;
+
     }
 
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
