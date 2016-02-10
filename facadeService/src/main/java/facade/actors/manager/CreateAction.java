@@ -1,21 +1,20 @@
 package facade.actors.manager;
 
-import com.google.common.util.concurrent.SettableFuture;
 import facade.actors.queue.Message;
-import facade.dto.CreateActorRequest;
+import fj.control.parallel.Actor;
 
 public class CreateAction implements Action {
 
-    private final SettableFuture<CreateActorRequest<Message>> future;
+    private final Actor<Message> actor;
     private final String uuid;
 
-    public CreateAction(SettableFuture<CreateActorRequest<Message>> future, String uuid) {
-        this.future = future;
+    public CreateAction(Actor<Message> actor, String uuid) {
+        this.actor = actor;
         this.uuid = uuid;
     }
 
-    public SettableFuture<CreateActorRequest<Message>> getFuture() {
-        return future;
+    public Actor<Message> getActor() {
+        return actor;
     }
 
     public String getUuid() {

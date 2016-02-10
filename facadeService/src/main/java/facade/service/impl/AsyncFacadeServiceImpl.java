@@ -9,7 +9,6 @@ import facade.actors.queue.*;
 import facade.client.CalculationClient;
 import facade.dto.CalculationRequest;
 import facade.dto.CalculationResponse;
-import facade.dto.CreateActorRequest;
 import facade.dto.ReadResponse;
 import facade.service.AsyncFacadeService;
 import facade.service.Calculation;
@@ -54,27 +53,17 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
     @Override
     public String randomStreamWithManagerActors(final BigDecimal parameter) {
-
-        final SettableFuture<CreateActorRequest<Message>> future = SettableFuture.create();
         String uuid = UUID.randomUUID().toString();
-        manager.act(new CreateAction(future, uuid));
-        Futures.addCallback(future, new FutureCallback<CreateActorRequest<Message>>() {
-            @Override
-            public void onSuccess(CreateActorRequest<Message> request) {
-                final Observable<CalculationResponse> state = randomStream(parameter);
-                state.subscribe(calculationResponse ->
-                                request.getActor().act(new NextMessage(calculationResponse))
-                        , throwable ->
-                                request.getActor().act(new ExceptionMessage(throwable))
-                        , () ->
-                                request.getActor().act(new FinishMessage())
-                );
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-            }
-        });
+        final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance(manager, uuid));
+        final Observable<CalculationResponse> state = randomStream(parameter);
+        state.subscribe(calculationResponse ->
+                        actor.act(new NextMessage(calculationResponse))
+                , throwable ->
+                        actor.act(new ExceptionMessage(throwable))
+                , () ->
+                        actor.act(new FinishMessage())
+        );
+        manager.act(new CreateAction(actor, uuid));
         return uuid;
     }
 
@@ -88,6 +77,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
                 if (messageActor == null) {
                     final SettableFuture<ReadResponse> future = SettableFuture.create();
                     future.setException(new RuntimeException("actor doest exist"));
+                    return future;
                 }
                 final SettableFuture<ReadResponse> future = SettableFuture.create();
                 messageActor.act(new ReadMessage(future));
@@ -173,6 +163,6 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     public void setExecutorService(ExecutorService service) {
         executorService = MoreExecutors.listeningDecorator(service);
         strategy = Strategy.executorStrategy(service);
-        manager = Actor.queueActor(strategy, ManagerEffect.getInstance(strategy, manager));
+        manager = Actor.queueActor(strategy, ManagerEffect.getInstance());
     }
 }
