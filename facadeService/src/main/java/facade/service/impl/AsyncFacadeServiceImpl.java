@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.*;
 import facade.actors.manager.Action;
 import facade.actors.manager.CreateAction;
-import facade.actors.manager.DeleteAction;
 import facade.actors.manager.FindAction;
 import facade.actors.queue.*;
 import facade.client.CalculationClient;
@@ -18,7 +17,6 @@ import facade.utils.ListenableUtils;
 import fj.Unit;
 import fj.control.parallel.Actor;
 import fj.control.parallel.Strategy;
-import fj.function.Effect1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +26,10 @@ import org.springframework.stereotype.Service;
 import rx.Observable;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -84,6 +85,10 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
         AsyncFunction<Actor<Message>, ReadResponse> function = new AsyncFunction<Actor<Message>, ReadResponse>() {
             @Override
             public ListenableFuture<ReadResponse> apply(Actor<Message> messageActor) throws Exception {
+                if (messageActor == null) {
+                    final SettableFuture<ReadResponse> future = SettableFuture.create();
+                    future.setException(new RuntimeException("actor doest exist"));
+                }
                 final SettableFuture<ReadResponse> future = SettableFuture.create();
                 messageActor.act(new ReadMessage(future));
                 return future;
@@ -99,7 +104,7 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
 
         final Observable<CalculationResponse> state = randomStream(parameter);
 
-        final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance());
+        final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance(manager, uuid));
         state.subscribe(calculationResponse ->
                         actor.act(new NextMessage(calculationResponse))
                 , throwable ->
@@ -168,32 +173,6 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     public void setExecutorService(ExecutorService service) {
         executorService = MoreExecutors.listeningDecorator(service);
         strategy = Strategy.executorStrategy(service);
-        manager = Actor.queueActor(strategy, new Effect1<Action>() {
-
-            private final Map<String, Actor<Message>> actors = new HashMap<>();
-//        WeakHashMap<String, Actor<Message>> map = new WeakHashMap<String, Actor<Message>>();
-
-            @Override
-            public void f(Action action) {
-                if (action instanceof CreateAction) {
-                    CreateAction ac = (CreateAction) action;
-                    final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance());
-                    actors.put(ac.getUuid(), actor);
-                    CreateActorRequest<Message> response = new CreateActorRequest<>(ac.getUuid(), actor);
-                    ac.getFuture().set(response);
-                } else if (action instanceof FindAction) {
-                    FindAction ac = (FindAction) action;
-                    Actor<Message> actor = actors.get(ac.getUuid());
-                    if (actor != null) {
-                        ac.getFuture().set(actor);
-                    } else {
-                        ac.getFuture().setException(new RuntimeException("actor not found."));
-                    }
-                } else if (action instanceof DeleteAction) {
-                    DeleteAction ac = (DeleteAction) action;
-                    actors.remove(ac.getUuid());
-                }
-            }
-        });
+        manager = Actor.queueActor(strategy, ManagerEffect.getInstance(strategy, manager));
     }
 }
