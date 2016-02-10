@@ -3,6 +3,7 @@ package facade.actors.queue;
 
 import com.google.common.util.concurrent.SettableFuture;
 import facade.dto.CalculationResponse;
+import facade.dto.ReadResponse;
 import fj.function.Effect1;
 import org.springframework.util.CollectionUtils;
 
@@ -13,7 +14,7 @@ public class Effect implements Effect1<Message> {
 
     private boolean finish = false;
     private final Queue<CalculationResponse> elements = new LinkedList<>();
-    private final Queue<SettableFuture<CalculationResponse>> futures = new LinkedList<>();
+    private final Queue<SettableFuture<ReadResponse>> futures = new LinkedList<>();
     private Throwable exception;
 
     public static Effect getInstance() {
@@ -29,7 +30,7 @@ public class Effect implements Effect1<Message> {
             finish = true;
             if (CollectionUtils.isEmpty(elements)) {
                 while (!CollectionUtils.isEmpty(futures)) {
-                    SettableFuture<CalculationResponse> future = futures.poll();
+                    SettableFuture<ReadResponse> future = futures.poll();
                     future.setException(new RuntimeException("no more elements."));
                 }
             }
@@ -38,27 +39,30 @@ public class Effect implements Effect1<Message> {
             if (CollectionUtils.isEmpty(futures)) {
                 elements.add(m.getResponse());
             } else {
-                futures.poll().set(m.getResponse());
+                ReadResponse response = new ReadResponse(m.getResponse());
+                if (!finish) {
+                    response.setNext(true);
+                }
+                futures.poll().set(response);
             }
 
         } else if (message instanceof ReadMessage) {
             ReadMessage m = (ReadMessage) message;
             if (exception != null) {
-                m.getFuture().getFuture().setException(exception);
+                m.getFuture().setException(exception);
                 return;
             }
             if (finish && CollectionUtils.isEmpty(elements)) {
-                m.getFuture().getFuture().setException(new RuntimeException("queue is closed"));
+                m.getFuture().setException(new RuntimeException("queue is closed"));
             } else if (elements.size() > 0) {
-                m.getFuture().getFuture().set(elements.poll());
+                ReadResponse response = new ReadResponse(elements.poll());
+
                 if (!finish || elements.size() > 0) {
-                    m.getFuture().setNext(true);
+                    response.setNext(true);
                 }
+                m.getFuture().set(response);
             } else {
-                futures.add(m.getFuture().getFuture());
-                if (!finish) {
-                    m.getFuture().setNext(true);
-                }
+                futures.add(m.getFuture());
             }
         } else if (message instanceof ExceptionMessage) {
             finish = true;

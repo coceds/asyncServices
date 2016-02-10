@@ -7,12 +7,18 @@ import facade.dto.CreateActorRequest;
 public class CreateAction implements Action {
 
     private final SettableFuture<CreateActorRequest<Message>> future;
+    private final String uuid;
 
-    public CreateAction(SettableFuture<CreateActorRequest<Message>> future) {
+    public CreateAction(SettableFuture<CreateActorRequest<Message>> future, String uuid) {
         this.future = future;
+        this.uuid = uuid;
     }
 
     public SettableFuture<CreateActorRequest<Message>> getFuture() {
         return future;
+    }
+
+    public String getUuid() {
+        return uuid;
     }
 }

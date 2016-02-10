@@ -84,24 +84,26 @@ public class FacadeController {
 
     @RequestMapping(value = "/calculateWithActor", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponseResource> calculateWithActor() {
-        final String uuid = asyncFacadeService.randomStreamWithActors(new BigDecimal("10"));
-        FutureResponse<CalculationResponse> future = asyncFacadeService.getNextById(uuid);
+//        final String uuid = asyncFacadeService.randomStreamWithActors(new BigDecimal("10"));
+        final String uuid = asyncFacadeService.randomStreamWithManagerActors(new BigDecimal("10"));
+//        ListenableFuture<ReadResponse> future = asyncFacadeService.getNextById(uuid);
+        ListenableFuture<ReadResponse> future = asyncFacadeService.getNextByIdWithManager(uuid);
+
         List<Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(FacadeController.class).calculateWithActor()).withSelfRel());
-        if (future.isNext()) {
-            links.add(linkTo(methodOn(FacadeController.class).getByActorId(uuid)).withRel("next"));
-        }
-        return setResultForActor(future.getFuture(), ImmutableList.copyOf(links));
+        links.add(linkTo(methodOn(FacadeController.class).getByActorId(uuid)).withRel("next"));
+
+        return setResultForActor(future, ImmutableList.copyOf(links));
     }
 
     @RequestMapping(value = "/getByActorId", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     public DeferredResult<CalculationResponseResource> getByActorId(@RequestParam String uuid) {
-        final FutureResponse<CalculationResponse> future = asyncFacadeService.getNextById(uuid);
+//        final ListenableFuture<ReadResponse> future = asyncFacadeService.getNextById(uuid);
+        final ListenableFuture<ReadResponse> future = asyncFacadeService.getNextByIdWithManager(uuid);
         List<Link> links = new ArrayList<>();
-        if (future.isNext()) {
-            links.add(linkTo(methodOn(FacadeController.class).getByActorId(uuid)).withRel("next"));
-        }
-        return setResultForActor(future.getFuture(), ImmutableList.copyOf(links));
+        links.add(linkTo(methodOn(FacadeController.class).getByActorId(uuid)).withRel("next"));
+
+        return setResultForActor(future, ImmutableList.copyOf(links));
     }
 
 
@@ -132,12 +134,12 @@ public class FacadeController {
         return result;
     }
 
-    private DeferredResult<CalculationResponseResource> setResultForActor(ListenableFuture<CalculationResponse> response, List<Link> links) {
+    private DeferredResult<CalculationResponseResource> setResultForActor(ListenableFuture<ReadResponse> response, List<Link> links) {
         final DeferredResult<CalculationResponseResource> result = new DeferredResult<>();
-        Futures.addCallback(response, new FutureCallback<CalculationResponse>() {
+        Futures.addCallback(response, new FutureCallback<ReadResponse>() {
             @Override
-            public void onSuccess(CalculationResponse response) {
-                CalculationResponseResource res = new CalculationResponseResource(response);
+            public void onSuccess(ReadResponse response) {
+                CalculationResponseResource res = new CalculationResponseResource(response.getResponse());
                 res.add(links);
                 result.setResult(res);
             }

@@ -1,6 +1,5 @@
 package facade.service.impl;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.*;
 import facade.actors.manager.Action;
@@ -12,7 +11,7 @@ import facade.client.CalculationClient;
 import facade.dto.CalculationRequest;
 import facade.dto.CalculationResponse;
 import facade.dto.CreateActorRequest;
-import facade.dto.FutureResponse;
+import facade.dto.ReadResponse;
 import facade.service.AsyncFacadeService;
 import facade.service.Calculation;
 import facade.utils.ListenableUtils;
@@ -50,42 +49,18 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     private ListeningExecutorService executorService;
     private final Map<String, Actor<Message>> observableMap = new ConcurrentHashMap<>();
 
-    private final Actor<Action> manager = Actor.queueActor(strategy, new Effect1<Action>() {
+    private Actor<Action> manager;
 
-        private final Map<String, Actor<Message>> actors = new HashMap<>();
+    @Override
+    public String randomStreamWithManagerActors(final BigDecimal parameter) {
 
-        @Override
-        public void f(Action action) {
-            if (action instanceof CreateAction) {
-                CreateAction ac = (CreateAction) action;
-                String uuid = UUID.randomUUID().toString();
-                final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance());
-                actors.put(uuid, actor);
-                CreateActorRequest<Message> response = new CreateActorRequest<>(uuid, actor);
-                ac.getFuture().set(response);
-            } else if (action instanceof FindAction) {
-                FindAction ac = (FindAction) action;
-                Actor<Message> actor = actors.get(ac.getUuid());
-                if (actor != null) {
-                    ac.getFuture().set(actor);
-                } else {
-                    ac.getFuture().setException(new RuntimeException("actor not found."));
-                }
-            } else if (action instanceof DeleteAction) {
-                DeleteAction ac = (DeleteAction) action;
-                actors.remove(ac.getUuid());
-            }
-        }
-    });
-
-    public ListenableFuture<String> randomStreamWithManagerActors(final BigDecimal parameter) {
-        final Observable<CalculationResponse> state = randomStream(parameter);
         final SettableFuture<CreateActorRequest<Message>> future = SettableFuture.create();
-        final SettableFuture<String> result = SettableFuture.create();
-        manager.act(new CreateAction(future));
+        String uuid = UUID.randomUUID().toString();
+        manager.act(new CreateAction(future, uuid));
         Futures.addCallback(future, new FutureCallback<CreateActorRequest<Message>>() {
             @Override
             public void onSuccess(CreateActorRequest<Message> request) {
+                final Observable<CalculationResponse> state = randomStream(parameter);
                 state.subscribe(calculationResponse ->
                                 request.getActor().act(new NextMessage(calculationResponse))
                         , throwable ->
@@ -93,28 +68,28 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
                         , () ->
                                 request.getActor().act(new FinishMessage())
                 );
-                result.set(request.getUuid());
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-                result.setException(throwable);
             }
         });
-        return result;
+        return uuid;
     }
 
-    public ListenableFuture<FutureResponse<CalculationResponse>> getNextByIdWithManager(String uuid) {
+    @Override
+    public ListenableFuture<ReadResponse> getNextByIdWithManager(String uuid) {
         final SettableFuture<Actor<Message>> future = SettableFuture.create();
         manager.act(new FindAction(uuid, future));
-        ListenableFuture<FutureResponse<CalculationResponse>> result = Futures.transform(future, new Function<Actor<Message>, FutureResponse<CalculationResponse>>() {
+        AsyncFunction<Actor<Message>, ReadResponse> function = new AsyncFunction<Actor<Message>, ReadResponse>() {
             @Override
-            public FutureResponse<CalculationResponse> apply(Actor<Message> actor) {
-                FutureResponse<CalculationResponse> futureResponse = new FutureResponse<>(SettableFuture.create());
-                actor.act(new ReadMessage(futureResponse));
-                return futureResponse;
+            public ListenableFuture<ReadResponse> apply(Actor<Message> messageActor) throws Exception {
+                final SettableFuture<ReadResponse> future = SettableFuture.create();
+                messageActor.act(new ReadMessage(future));
+                return future;
             }
-        });
+        };
+        ListenableFuture<ReadResponse> result = Futures.transform(future, function);
         return result;
     }
 
@@ -137,14 +112,14 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     }
 
     @Override
-    public FutureResponse<CalculationResponse> getNextById(String uuid) {
+    public ListenableFuture<ReadResponse> getNextById(String uuid) {
         Actor<Message> actor = observableMap.get(uuid);
         if (actor == null) {
             throw new RuntimeException("observable was not found.");
         }
-        FutureResponse<CalculationResponse> futureResponse = new FutureResponse<>(SettableFuture.create());
-        actor.act(new ReadMessage(futureResponse));
-        return futureResponse;
+        final SettableFuture<ReadResponse> future = SettableFuture.create();
+        actor.act(new ReadMessage(future));
+        return future;
     }
 
     @Override
@@ -193,5 +168,32 @@ class AsyncFacadeServiceImpl implements AsyncFacadeService {
     public void setExecutorService(ExecutorService service) {
         executorService = MoreExecutors.listeningDecorator(service);
         strategy = Strategy.executorStrategy(service);
+        manager = Actor.queueActor(strategy, new Effect1<Action>() {
+
+            private final Map<String, Actor<Message>> actors = new HashMap<>();
+//        WeakHashMap<String, Actor<Message>> map = new WeakHashMap<String, Actor<Message>>();
+
+            @Override
+            public void f(Action action) {
+                if (action instanceof CreateAction) {
+                    CreateAction ac = (CreateAction) action;
+                    final Actor<Message> actor = Actor.queueActor(strategy, Effect.getInstance());
+                    actors.put(ac.getUuid(), actor);
+                    CreateActorRequest<Message> response = new CreateActorRequest<>(ac.getUuid(), actor);
+                    ac.getFuture().set(response);
+                } else if (action instanceof FindAction) {
+                    FindAction ac = (FindAction) action;
+                    Actor<Message> actor = actors.get(ac.getUuid());
+                    if (actor != null) {
+                        ac.getFuture().set(actor);
+                    } else {
+                        ac.getFuture().setException(new RuntimeException("actor not found."));
+                    }
+                } else if (action instanceof DeleteAction) {
+                    DeleteAction ac = (DeleteAction) action;
+                    actors.remove(ac.getUuid());
+                }
+            }
+        });
     }
 }

@@ -1,22 +1,18 @@
 package facade.actors.queue;
 
 
-import facade.dto.CalculationResponse;
-import facade.dto.FutureResponse;
+import com.google.common.util.concurrent.SettableFuture;
+import facade.dto.ReadResponse;
 
 public class ReadMessage implements Message {
 
-    private FutureResponse<CalculationResponse> future;
+    private final SettableFuture<ReadResponse> future;
 
-    public ReadMessage(FutureResponse<CalculationResponse> future) {
+    public ReadMessage(SettableFuture<ReadResponse> future) {
         this.future = future;
     }
 
-    public FutureResponse<CalculationResponse> getFuture() {
+    public SettableFuture<ReadResponse> getFuture() {
         return future;
-    }
-
-    public void setFuture(FutureResponse<CalculationResponse> future) {
-        this.future = future;
     }
 }
